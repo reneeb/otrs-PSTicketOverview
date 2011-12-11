@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<otrs_package version="1.0">
+    <CVS>$Id: DSVTicketOverview.sopm,v 1.4 2011/04/18 11:44:21 rb Exp $</CVS>
+    <Name>DSVTicketOverview</Name>
+    <Version>0.0.0</Version>
+    <Framework>3.0.x</Framework>
+    <Vendor>einraumwerk</Vendor>
+    <URL>http://einraumwerk.de/</URL>
+    <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
+    <Description Lang="en">A module that implements a changed ticket overview.</Description>
+    <Description Lang="de">Ein Modul, das eine geänderte Ticketübersicht umsetzt.</Description>
+    <PackageRequired Version="0.0.56">DSVAgentTicket</PackageRequired>
+    <Filelist>
+        <File Permission="644" Location="Kernel/Output/HTML/Standard/AgentTicketOverviewSmall.dtl"/>
+        <File Permission="644" Location="Kernel/Output/HTML/TicketOverviewSmall.pm"/>
+        <File Permission="644" Location="Kernel/System/Ticket.pm"/>
+        <File Permission="644" Location="var/httpd/htdocs/js/DSV.TicketOverview.js"/>
+    </Filelist>
+</otrs_package>
