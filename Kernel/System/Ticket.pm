@@ -2323,11 +2323,13 @@ sub IsEscalationPostpone {
 
     return if !$Param{Ticket};
 
-    my $PostponeStateTypes = $Self->{ConfigObject}->Get( 'DSV::EscalationPostponeStateTypes' ) || [];
-    my $PostponeStates     = $Self->{ConfigObject}->Get( 'DSV::EscalationPostponeStates' )     || [];
+    my $PostponeStateTypes  = $Self->{ConfigObject}->Get( 'DSV::EscalationPostponeStateTypes' )  || [];
+    my $PostponeStates      = $Self->{ConfigObject}->Get( 'DSV::EscalationPostponeStates' )      || [];
+    my $PostponeTicketTypes = $Self->{ConfigObject}->Get( 'DSV::EscalationPostponeTicketTypes' ) || [];
 
-    return 1 if grep{ $_ eq $Param{Ticket}->{StateType} }@{ $PostponeStateTypes };
-    return 1 if grep{ $_ eq $Param{Ticket}->{State} }@{ $PostponeStates };
+    return 1 if grep { $_ eq $Param{Ticket}->{StateType} } @{ $PostponeStateTypes };
+    return 1 if grep { $_ eq $Param{Ticket}->{State} } @{ $PostponeStates };
+    return 1 if grep { $_ eq $Param{Ticket}->{Type} } @{ $PostponeTicketTypes };
     return;
 }
 # ---
