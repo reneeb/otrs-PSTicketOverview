@@ -2155,8 +2155,13 @@ sub TicketEscalationPreferences {
 get escalation properties of a ticket
 
     my %Escalation = $TicketObject->TicketEscalationDateCalculation(
-        Ticket => $Param{Ticket},
-        UserID => $Param{UserID},
+        Ticket                   => $Param{Ticket},
+        UserID                   => $Param{UserID},
+# ---
+# DSV
+# ---
+        IgnoreEscalationPostpone => 1,
+# ---
     );
 
 it returnes
@@ -2206,15 +2211,16 @@ sub TicketEscalationDateCalculation {
     # get ticket attributes
     my %Ticket = %{ $Param{Ticket} };
 
-    # do no escalations on (merge|close|remove) tickets
 # ---
 # DSV
 # ---
+    # do no escalations on (merge|close|remove) tickets
+    
     # return if $Ticket{StateType} eq 'merge';
     # return if $Ticket{StateType} eq 'close';
     # return if $Ticket{StateType} eq 'remove';
 
-    return if $Self->IsEscalationPostpone( Ticket => \%Ticket );
+    return if $Self->IsEscalationPostpone( Ticket => \%Ticket ) && !$Param{IgnoreEscalationPostpone};
 # ---
 
     # get escalation properties
@@ -2332,6 +2338,66 @@ sub IsEscalationPostpone {
     return 1 if grep { $_ eq $Param{Ticket}->{Type} } @{ $PostponeTicketTypes };
     return;
 }
+
+=item GetTicketEscalationTimesFromHistory()
+
+Sets and recalculates escalation times within given ticket from its history
+(using the newest history entry of type PreviousEscalationTimes)
+
+    %Ticket = $TicketObject->GetTicketEscalationTimesFromHistory(
+        Ticket => \%Ticket,
+        UserID => 1,
+    );
+
+=cut
+
+sub GetTicketEscalationTimesFromHistory {
+    my ( $Self, %Param ) = @_;
+    
+    # check needed stuff
+    for my $Needed (qw( Ticket UserID )) {
+        if ( !$Param{$Needed} ) {
+            $Self->{LogObject}->Log( Priority => 'error', Message => "Need $Needed!" );
+            return;
+        }
+    }
+
+    my @TicketHistory = $Self->HistoryGet(
+        TicketID => $Param{Ticket}->{TicketID},
+        UserID   => $Param{UserID},
+    );
+    
+    my $PreviousEscalationTimes;
+    for my $TicketHistory ( reverse grep { $_->{HistoryType} eq 'PreviousEscalationTimes' } @TicketHistory ) {
+        $PreviousEscalationTimes = $TicketHistory->{Name};
+        last;
+    }
+    
+    if ($PreviousEscalationTimes) {
+        my @PreviousEscalationTimes = split ';', $PreviousEscalationTimes;
+        for my $PreviousEscalationTime (@PreviousEscalationTimes) {
+            if ( $PreviousEscalationTime =~ m{ \A (Escalation (Response|Update|Solution)? Time) : (\d+) \z }smx ) {
+                my $EscalationType = $1;
+                my $EscalationTime = $3;
+                
+                $Param{Ticket}->{$EscalationType} = $EscalationTime;
+            }
+        }
+
+        # recalculate escalation times of ticket
+        my %Escalation = $Self->TicketEscalationDateCalculation(
+            Ticket                   => $Param{Ticket},
+            UserID                   => $Param{UserID},
+            IgnoreEscalationPostpone => 1,
+        );
+    
+        for my $Key ( keys %Escalation ) {
+            $Param{Ticket}->{$Key} = $Escalation{$Key};
+        }
+    }
+
+    return %{ $Param{Ticket} };
+}
 # ---
 
 =item TicketEscalationIndexBuild()
@@ -2359,6 +2425,18 @@ sub TicketEscalationIndexBuild {
     my %Ticket = $Self->TicketGet(
         TicketID => $Param{TicketID},
         UserID   => $Param{UserID},
+    );
+
+    # add current escalation times of ticket to history so that they can be retrieved
+    # after the ticket has been closed (e. g. for statistics)
+    $Self->HistoryAdd(
+        TicketID     => $Param{TicketID},
+        Name         => "EscalationTime:$Ticket{EscalationTime};"
+                        . "EscalationResponseTime:$Ticket{EscalationResponseTime};"
+                        . "EscalationUpdateTime:$Ticket{EscalationUpdateTime};"
+                        . "EscalationSolutionTime:$Ticket{EscalationSolutionTime}",
+        HistoryType  => 'PreviousEscalationTimes',
+        CreateUserID => $Param{UserID},
     );
 
     # do no escalations on (merge|close|remove) tickets
