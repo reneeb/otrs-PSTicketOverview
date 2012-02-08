@@ -2367,23 +2367,27 @@ sub GetTicketEscalationTimesFromHistory {
         UserID   => $Param{UserID},
     );
     
-    my $PreviousEscalationTimes;
+    PREVIOUS_ESCALATION_TIMES:
     for my $TicketHistory ( reverse grep { $_->{HistoryType} eq 'PreviousEscalationTimes' } @TicketHistory ) {
-        $PreviousEscalationTimes = $TicketHistory->{Name};
-        last;
-    }
-    
-    if ($PreviousEscalationTimes) {
+        my $PreviousEscalationTimes = $TicketHistory->{Name};
         my @PreviousEscalationTimes = split ';', $PreviousEscalationTimes;
+        
+        my $ValidPreviousEscalationTimesHistory = 0;
         for my $PreviousEscalationTime (@PreviousEscalationTimes) {
             if ( $PreviousEscalationTime =~ m{ \A (Escalation (Response|Update|Solution)? Time) : (\d+) \z }smx ) {
                 my $EscalationType = $1;
                 my $EscalationTime = $3;
                 
+                if ( defined $EscalationTime && $EscalationTime > 0 ) {
+                    $ValidPreviousEscalationTimesHistory = 1;
+                }
+                
                 $Param{Ticket}->{$EscalationType} = $EscalationTime;
             }
         }
-
+        
+        next PREVIOUS_ESCALATION_TIMES if (!$ValidPreviousEscalationTimesHistory);
+        
         # recalculate escalation times of ticket
         my %Escalation = $Self->TicketEscalationDateCalculation(
             Ticket                   => $Param{Ticket},
@@ -2394,6 +2398,8 @@ sub GetTicketEscalationTimesFromHistory {
         for my $Key ( keys %Escalation ) {
             $Param{Ticket}->{$Key} = $Escalation{$Key};
         }
+        
+        last PREVIOUS_ESCALATION_TIMES if ($ValidPreviousEscalationTimesHistory);
     }
 
     return %{ $Param{Ticket} };
@@ -2427,22 +2433,37 @@ sub TicketEscalationIndexBuild {
         UserID   => $Param{UserID},
     );
 
-    # add current escalation times of ticket to history so that they can be retrieved
-    # after the ticket has been closed (e. g. for statistics)
-    $Self->HistoryAdd(
-        TicketID     => $Param{TicketID},
-        Name         => "EscalationTime:$Ticket{EscalationTime};"
-                        . "EscalationResponseTime:$Ticket{EscalationResponseTime};"
-                        . "EscalationUpdateTime:$Ticket{EscalationUpdateTime};"
-                        . "EscalationSolutionTime:$Ticket{EscalationSolutionTime}",
-        HistoryType  => 'PreviousEscalationTimes',
-        CreateUserID => $Param{UserID},
-    );
-
-    # do no escalations on (merge|close|remove) tickets
 # ---
 # DSV
 # ---
+    # add current escalation times of ticket to history so that they can be retrieved
+    # after the ticket has been closed (e. g. for statistics)
+    my $AddPreviousEscalationTimesHistory = 0;
+    for my $EscalationTimeType ( qw(
+        EscalationTime
+        EscalationResponseTime
+        EscalationUpdateTime
+        EscalationSolutionTime
+    ) ) { 
+        if ( defined $Ticket{$EscalationTimeType} && $Ticket{$EscalationTimeType} > 0 ) {
+            $AddPreviousEscalationTimesHistory = 1;
+            last;
+        }
+    }
+    
+    if ($AddPreviousEscalationTimesHistory) {
+        $Self->HistoryAdd(
+            TicketID     => $Param{TicketID},
+            Name         => "EscalationTime:$Ticket{EscalationTime};"
+                            . "EscalationResponseTime:$Ticket{EscalationResponseTime};"
+                            . "EscalationUpdateTime:$Ticket{EscalationUpdateTime};"
+                            . "EscalationSolutionTime:$Ticket{EscalationSolutionTime}",
+            HistoryType  => 'PreviousEscalationTimes',
+            CreateUserID => $Param{UserID},
+        );
+    }
+
+    # do no escalations on (merge|close|remove) tickets
     # if ( $Ticket{StateType} =~ /^(merge|close|remove)/i ) {
     if ( $Self->IsEscalationPostpone( Ticket => \%Ticket ) ) {
 # ---
