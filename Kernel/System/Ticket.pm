@@ -2367,26 +2367,26 @@ sub GetTicketEscalationTimesFromHistory {
         UserID   => $Param{UserID},
     );
     
-    PREVIOUS_ESCALATION_TIMES:
+    my $ValidPreviousEscalationTimesHistory = 0;
     for my $TicketHistory ( reverse grep { $_->{HistoryType} eq 'PreviousEscalationTimes' } @TicketHistory ) {
         my $PreviousEscalationTimes = $TicketHistory->{Name};
         my @PreviousEscalationTimes = split ';', $PreviousEscalationTimes;
         
-        my $ValidPreviousEscalationTimesHistory = 0;
         for my $PreviousEscalationTime (@PreviousEscalationTimes) {
             if ( $PreviousEscalationTime =~ m{ \A (Escalation (Response|Update|Solution)? Time) : (\d+) \z }smx ) {
                 my $EscalationType = $1;
                 my $EscalationTime = $3;
                 
+                # this fetches the last/newest valid time for this escalation type from history
                 if ( defined $EscalationTime && $EscalationTime > 0 ) {
                     $ValidPreviousEscalationTimesHistory = 1;
+                    $Param{Ticket}->{$EscalationType} = $EscalationTime;
                 }
-                
-                $Param{Ticket}->{$EscalationType} = $EscalationTime;
             }
         }
+    }
         
-        next PREVIOUS_ESCALATION_TIMES if (!$ValidPreviousEscalationTimesHistory);
+    if ($ValidPreviousEscalationTimesHistory) {
         
         # recalculate escalation times of ticket
         my %Escalation = $Self->TicketEscalationDateCalculation(
@@ -2398,8 +2398,6 @@ sub GetTicketEscalationTimesFromHistory {
         for my $Key ( keys %Escalation ) {
             $Param{Ticket}->{$Key} = $Escalation{$Key};
         }
-        
-        last PREVIOUS_ESCALATION_TIMES if ($ValidPreviousEscalationTimesHistory);
     }
 
     return %{ $Param{Ticket} };
