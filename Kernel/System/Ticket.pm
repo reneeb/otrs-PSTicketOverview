@@ -2346,6 +2346,9 @@ Sets and recalculates escalation times within given ticket from its history
 
     %Ticket = $TicketObject->GetTicketEscalationTimesFromHistory(
         Ticket => \%Ticket,
+        # optional, if set, escalation times are retrieved from history even if the ticket itself
+        # has escalation times set
+        ForceHistory => 1, # optional 
         UserID => 1,
     );
 
@@ -2379,8 +2382,10 @@ sub GetTicketEscalationTimesFromHistory {
                 
                 # this fetches the last/newest valid time for this escalation type from history
                 if ( defined $EscalationTime && $EscalationTime > 0 ) {
-                    $ValidPreviousEscalationTimesHistory = 1;
-                    $Param{Ticket}->{$EscalationType} = $EscalationTime;
+                    if ( !$Param{Ticket}->{$EscalationType} || $Param{ForceHistory} ) {
+                        $ValidPreviousEscalationTimesHistory = 1;
+                        $Param{Ticket}->{$EscalationType} = $EscalationTime;
+                    }
                 }
             }
         }
