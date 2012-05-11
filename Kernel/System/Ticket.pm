@@ -2342,13 +2342,9 @@ sub IsEscalationPostpone {
 =item GetTicketEscalationTimesFromHistory()
 
 Sets and recalculates escalation times within given ticket from its history
-(using the newest history entry of type PreviousEscalationTimes)
 
     %Ticket = $TicketObject->GetTicketEscalationTimesFromHistory(
         Ticket => \%Ticket,
-        # optional, if set, escalation times are retrieved from history even if the ticket itself
-        # has escalation times set
-        ForceHistory => 1, # optional 
         UserID => 1,
     );
 
@@ -2371,7 +2367,7 @@ sub GetTicketEscalationTimesFromHistory {
     );
     
     my $ValidPreviousEscalationTimesHistory = 0;
-    for my $TicketHistory ( reverse grep { $_->{HistoryType} eq 'PreviousEscalationTimes' } @TicketHistory ) {
+    for my $TicketHistory ( grep { $_->{HistoryType} eq 'PreviousEscalationTimes' } @TicketHistory ) {
         my $PreviousEscalationTimes = $TicketHistory->{Name};
         my @PreviousEscalationTimes = split ';', $PreviousEscalationTimes;
         
@@ -2380,12 +2376,18 @@ sub GetTicketEscalationTimesFromHistory {
                 my $EscalationType = $1;
                 my $EscalationTime = $3;
                 
-                # this fetches the last/newest valid time for this escalation type from history
-                if ( defined $EscalationTime && $EscalationTime > 0 ) {
-                    if ( !$Param{Ticket}->{$EscalationType} || $Param{ForceHistory} ) {
-                        $ValidPreviousEscalationTimesHistory = 1;
-                        $Param{Ticket}->{$EscalationType} = $EscalationTime;
-                    }
+                # this fetches the first/oldest valid time for this escalation type from history
+                if (
+                    defined $EscalationTime
+                    && $EscalationTime > 0
+                    &&
+                    (
+                        !$Param{Ticket}->{$EscalationType}
+                        || $EscalationTime < $Param{Ticket}->{$EscalationType}
+                    )
+                ) {
+                    $ValidPreviousEscalationTimesHistory = 1;
+                    $Param{Ticket}->{$EscalationType} = $EscalationTime;
                 }
             }
         }
@@ -2442,25 +2444,35 @@ sub TicketEscalationIndexBuild {
     # add current escalation times of ticket to history so that they can be retrieved
     # after the ticket has been closed (e. g. for statistics)
     my $AddPreviousEscalationTimesHistory = 0;
+    my %AddEscalationTimes;
+    my $SystemTime = $Self->{TimeObject}->SystemTime();
     for my $EscalationTimeType ( qw(
         EscalationTime
         EscalationResponseTime
         EscalationUpdateTime
         EscalationSolutionTime
     ) ) { 
-        if ( defined $Ticket{$EscalationTimeType} && $Ticket{$EscalationTimeType} > 0 ) {
+        if (
+            defined $Ticket{$EscalationTimeType}
+            && $Ticket{$EscalationTimeType} > 0
+            # only add escalation time if it has been reached
+            && $Ticket{$EscalationTimeType} < $SystemTime
+        ) {
+            $AddEscalationTimes{$EscalationTimeType} = $Ticket{$EscalationTimeType};
             $AddPreviousEscalationTimesHistory = 1;
-            last;
+        }
+        else {
+            $AddEscalationTimes{$EscalationTimeType} = 0;
         }
     }
     
     if ($AddPreviousEscalationTimesHistory) {
         $Self->HistoryAdd(
             TicketID     => $Param{TicketID},
-            Name         => "EscalationTime:$Ticket{EscalationTime};"
-                            . "EscalationResponseTime:$Ticket{EscalationResponseTime};"
-                            . "EscalationUpdateTime:$Ticket{EscalationUpdateTime};"
-                            . "EscalationSolutionTime:$Ticket{EscalationSolutionTime}",
+            Name         => "EscalationTime:$AddEscalationTimes{EscalationTime};"
+                            . "EscalationResponseTime:$AddEscalationTimes{EscalationResponseTime};"
+                            . "EscalationUpdateTime:$AddEscalationTimes{EscalationUpdateTime};"
+                            . "EscalationSolutionTime:$AddEscalationTimes{EscalationSolutionTime}",
             HistoryType  => 'PreviousEscalationTimes',
             CreateUserID => $Param{UserID},
         );
