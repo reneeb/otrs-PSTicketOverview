@@ -11,6 +11,7 @@
     <Description Lang="de">Ein Modul, das eine geänderte Ticketübersicht umsetzt.</Description>
     <Filelist>
         <File Permission="644" Location="Kernel/Output/HTML/Standard/AgentTicketOverviewSmall.dtl"/>
+        <File Permission="644" Location="Kernel/Output/HTML/Standard/AgentTicketOverviewPreview.dtl"/>
         <File Permission="644" Location="Kernel/Output/HTML/TicketOverviewSmall.pm"/>
     </Filelist>
 </otrs_package>

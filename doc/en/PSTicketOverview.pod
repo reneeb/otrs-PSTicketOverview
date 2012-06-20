@@ -2,7 +2,9 @@
 
 =head2 DESCRIPTION
 
-This packages introduces a slightly changed ticket overview:
+This packages introduces a slightly changed ticket overview.
+
+For the small mode the changes include:
 
 =over 4
 
@@ -16,4 +18,10 @@ This packages introduces a slightly changed ticket overview:
 
 =back
 
+For the lage mode the changes include:
 
+=over 4
+
+=item * Remove length limit for title
+
+=back
