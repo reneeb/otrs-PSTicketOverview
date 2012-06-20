@@ -94,7 +94,12 @@
 <!-- dtl:block:Meta -->
             <div class="Infos">
                 <h2>
+# ---
+# PS
+# ---
+#                    <a href="$Env{"Baselink"}Action=AgentTicketZoom;TicketID=$LQData{"TicketID"}" title="$QData{"Title","60"}" class="MasterActionLink">$Config{"Ticket::Hook"}: $Data{"TicketNumber"} &ndash; $QData{"Title","60"}</a>
                     <a href="$Env{"Baselink"}Action=AgentTicketZoom;TicketID=$LQData{"TicketID"}" title="$QData{"Title"}" class="MasterActionLink">$Config{"Ticket::Hook"}: $Data{"TicketNumber"} &ndash; $QData{"Title"}</a>
+# ---
                 </h2>
 <!-- dtl:block:MenuItem -->
                 <a href="$Env{"Baselink"}$Data{"Link"}" $Data{"LinkParam"} class="menuitem" title="$Text{"$Data{"Description"}"}">$Text{"$Data{"Name"}"}</a>

@@ -13,5 +13,6 @@
         <File Permission="644" Location="Kernel/Output/HTML/Standard/AgentTicketOverviewSmall.dtl"/>
         <File Permission="644" Location="Kernel/Output/HTML/Standard/AgentTicketOverviewPreview.dtl"/>
         <File Permission="644" Location="Kernel/Output/HTML/TicketOverviewSmall.pm"/>
+        <File Permission="644" Location="var/httpd/htdocs/skins/Agent/default/css/Core.OverviewLarge.css"/>
     </Filelist>
 </otrs_package>
