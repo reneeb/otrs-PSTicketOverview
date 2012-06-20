@@ -143,7 +143,7 @@
 # ---
 # PS
 # ---
-                        <div title="$QData{"CustomerName"} ($QData{"CustomerID"})">$QData{"CustomerName","15"}</div>
+                        <div title="$QData{"CustomerName"} ($QData{"CustomerID"})">$QData{"CustomerName"}</div>
 #                        <div title="$QData{"From"}">$QData{"FromRealname","30"}</div>
 # ---
 
