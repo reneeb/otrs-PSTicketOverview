@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<otrs_package version="1.0">
+    <CVS>$Id: PSTicketOverview.sopm,v 1.4 2011/04/18 11:44:21 rb Exp $</CVS>
+    <Name>PSTicketOverview</Name>
+    <Version>0.2.5</Version>
+    <Framework>3.1.x</Framework>
+    <Vendor>Perl-Services.de</Vendor>
+    <URL>http://perl-services.de/</URL>
+    <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
+    <Description Lang="en">A module that implements a changed ticket overview.</Description>
+    <Description Lang="de">Ein Modul, das eine geänderte Ticketübersicht umsetzt.</Description>
+    <Filelist>
+        <File Permission="644" Location="Kernel/Output/HTML/Standard/AgentTicketOverviewSmall.dtl"/>
+        <File Permission="644" Location="Kernel/Output/HTML/TicketOverviewSmall.pm"/>
+    </Filelist>
+</otrs_package>

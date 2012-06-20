@@ -1,6 +1,6 @@
 # --
 # Kernel/Output/HTML/TicketOverviewSmall.pm
-# Copyright (C) 2010-2011 einraumwerk, http://einraumwerk.de/
+# Copyright (C) 2010-2011 Perl-Services.de, http://perl-services.de/
 # --
 # $Id: TicketOverviewSmall.pm,v 1.4 2011/04/18 17:31:06 rb Exp $
 # --
@@ -15,13 +15,6 @@ use strict;
 use warnings;
 
 use Kernel::System::CustomerUser;
-
-# ---
-# DSV
-# ---
-use Kernel::System::DSVTicket;
-
-# ---
 
 use vars qw($VERSION);
 $VERSION = qw($Revision: 1.4 $) [1];
@@ -45,13 +38,6 @@ sub new {
 
     $Self->{SmallViewColumnHeader}
         = $Self->{ConfigObject}->Get('Ticket::Frontend::OverviewSmall')->{ColumnHeader};
-
-    # ---
-    # DSV
-    # ---
-    $Self->{DSVTicketObject} = Kernel::System::DSVTicket->new(%Param);
-
-    # ---
 
     return $Self;
 }
@@ -151,38 +137,6 @@ sub Run {
             my %Article = $Self->{TicketObject}->ArticleLastCustomerArticle(
                 TicketID => $TicketID,
             );
-
-            # ---
-            # DSV
-            # ---
-
-            # get application
-            my %Ticket = $Self->{DSVTicketObject}->GetCustData(
-                TicketID => $TicketID,
-            );
-            $Article{Anwendung} = $Ticket{TicketAnwendung};
-            my $MassIncident = $Self->{DSVTicketObject}->IsTicketMassIncident(
-                TicketID => $TicketID,
-            );
-
-            if ($MassIncident) {
-                $Article{MassIncident} = $MassIncident == 2 ? 'MassIncident' : 'MassIncidentChild';
-            }
-
-            my %FirstArticle = $Self->{TicketObject}->ArticleFirstArticle(
-                TicketID => $TicketID,
-            );
-            my $IncompleteTicket = $Self->{DSVTicketObject}->IsTicketIncomplete(
-                DSVTicket  => \%Ticket,
-                TicketData => \%FirstArticle,
-            );
-
-            if ($IncompleteTicket) {
-                $Article{IncompleteTicket} = 'IncompleteTicket';
-                $Article{MassIncident}     = '';
-            }
-
-            # ---
 
             # prepare subject
             $Article{Subject} = $Self->{TicketObject}->TicketSubjectClean(
@@ -336,10 +290,9 @@ sub Run {
         my @Col = (qw(TicketNumber Age State Lock Queue Owner CustomerID));
 
         # ---
-        # DSV
+        # PS
         # ---
         pop @Col;
-        push @Col, 'From';
 
         # ---
 
@@ -350,25 +303,11 @@ sub Run {
 
         # check if last customer subject or ticket title should be shown
         if ( $Self->{SmallViewColumnHeader} eq 'LastCustomerSubject' ) {
-
-            # ---
-            # DSV
-            # ---
-            #            push @Col, 'LastCustomerSubject';
-            push @Col, 'Subject';
-
-            # ---
+            push @Col, 'LastCustomerSubject';
         }
         elsif ( $Self->{SmallViewColumnHeader} eq 'TicketTitle' ) {
             push @Col, 'Title';
         }
-
-        # ---
-        # DSV
-        # ---
-        push @Col, 'Anwendung';
-
-        # ---
 
         for my $Key (@Col) {
             my $CSS = '';
@@ -431,6 +370,14 @@ sub Run {
         my %UserInfo = $Self->{UserObject}->GetUserData(
             UserID => $Article{OwnerID},
         );
+
+        # ---
+        # PS
+        # ---
+        if ( !$UserInfo{CustomerName} ) {
+            $UserInfo{CustomerName} = $Article{FromRealname};
+        }
+        # ---
 
         $Self->{LayoutObject}->Block(
             Name => 'Record',
