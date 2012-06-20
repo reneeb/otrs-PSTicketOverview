@@ -374,8 +374,8 @@ sub Run {
         # ---
         # PS
         # ---
-        if ( !$UserInfo{CustomerName} ) {
-            $UserInfo{CustomerName} = $Article{FromRealname};
+        if ( !$Article{CustomerName} ) {
+            $Article{CustomerName} = $Article{FromRealname};
         }
         # ---
 

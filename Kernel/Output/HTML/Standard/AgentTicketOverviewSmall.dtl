@@ -148,10 +148,10 @@
 # ---
 
 <!-- dtl:block:RecordLastCustomerSubject -->
-                        <div title="$QData{"Subject"}">$QData{"Subject","30"}</div>
+                        <div title="$QData{"Subject"}">$QData{"Subject"}</div>
 <!-- dtl:block:RecordLastCustomerSubject -->
 <!-- dtl:block:RecordTicketTitle -->
-                        <div title="$QData{"Title"}">$QData{"Title","30"}</div>
+                        <div title="$QData{"Title"}">$QData{"Title"}</div>
 <!-- dtl:block:RecordTicketTitle -->
                     </td>
                     <td width="8%">
