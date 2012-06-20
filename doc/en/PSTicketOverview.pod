@@ -1,0 +1,19 @@
+=head1 PSTicketOverview
+
+=head2 DESCRIPTION
+
+This packages introduces a slightly changed ticket overview:
+
+=over 4
+
+=item * Remove the column "customernr" (last column)
+
+=item * Remove length limit for subject/title
+
+=item * Remove length limit for customer
+
+=item * show customer information instead of email sender in "from/title" column
+
+=back
+
+
