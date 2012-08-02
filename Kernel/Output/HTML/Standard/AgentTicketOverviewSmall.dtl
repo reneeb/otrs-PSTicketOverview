@@ -44,32 +44,32 @@
                 <tr>
 <!-- dtl:block:BulkNavBar -->
                     <th class="Checkbox Fixed">
-                    <input type="checkbox" class="Checkbox AutocompleteOff" title="$Text{"Select all"}" id="SelectAllTickets" />
+                        <input type="checkbox" class="Checkbox AutocompleteOff" title="$Text{"Select all"}" id="SelectAllTickets" />
                     </th>
 <!-- dtl:block:BulkNavBar -->
 <!-- dtl:block:OverviewNavBarPageFlag -->
                     <th class="Fixed $QData{"CSS"}">
 <!-- dtl:block:OverviewNavBarPageFlagLink -->
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=$LQData{"Name"};OrderBy=$LQData{"OrderBy"}" title="$Text{"$Data{"Name"}"}"></a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=$LQData{"Name"};OrderBy=$LQData{"OrderBy"}" title="$Text{"$Data{"Name"}"}"></a>
 <!-- dtl:block:OverviewNavBarPageFlagLink -->
 <!-- dtl:block:OverviewNavBarPageFlagEmpty -->
-                    <span title="$Text{"$Data{"Name"}"}"></span>
+                        <span title="$Text{"$Data{"Name"}"}"></span>
 <!-- dtl:block:OverviewNavBarPageFlagEmpty -->
                     </th>
 <!-- dtl:block:OverviewNavBarPageFlag -->
 <!-- dtl:block:OverviewNavBarPageTicketNumber -->
                     <th class="TicketNumber $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=TicketNumber;OrderBy=$LQData{"OrderBy"}">$Config{"Ticket::Hook"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=TicketNumber;OrderBy=$LQData{"OrderBy"}">$Config{"Ticket::Hook"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageTicketNumber -->
 <!-- dtl:block:OverviewNavBarPageAge -->
                     <th class="Age $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Age;OrderBy=$LQData{"OrderBy"}">$Text{"Age"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Age;OrderBy=$LQData{"OrderBy"}">$Text{"Age"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageAge -->
 <!-- dtl:block:OverviewNavBarPageEscalationTime -->
                     <th class="EscalationTime $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=EscalationTime;OrderBy=$LQData{"OrderBy"}">$Text{"Escalation in"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=EscalationTime;OrderBy=$LQData{"OrderBy"}">$Text{"Escalation in"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageEscalationTime -->
 # ---
@@ -99,22 +99,22 @@
 # ---
 <!-- dtl:block:OverviewNavBarPageState -->
                     <th class="State $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=State;OrderBy=$LQData{"OrderBy"}">$Text{"State"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=State;OrderBy=$LQData{"OrderBy"}">$Text{"State"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageState -->
 <!-- dtl:block:OverviewNavBarPageLock -->
                     <th class="Lock $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Lock;OrderBy=$LQData{"OrderBy"}">$Text{"Locked"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Lock;OrderBy=$LQData{"OrderBy"}">$Text{"Locked"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageLock -->
 <!-- dtl:block:OverviewNavBarPageQueue -->
                     <th class="Queue $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Queue;OrderBy=$LQData{"OrderBy"}">$Text{"Queue"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Queue;OrderBy=$LQData{"OrderBy"}">$Text{"Queue"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageQueue -->
 <!-- dtl:block:OverviewNavBarPageOwner -->
                     <th class="Owner $QData{"CSS"}">
-                    <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Owner;OrderBy=$LQData{"OrderBy"}">$Text{"Owner"}</a>
+                        <a name="OverviewControl" href="$Env{"Baselink"}Action=$Env{"Action"};$Data{"LinkSort"};SortBy=Owner;OrderBy=$LQData{"OrderBy"}">$Text{"Owner"}</a>
                     </th>
 <!-- dtl:block:OverviewNavBarPageOwner -->
 # ---
@@ -229,7 +229,12 @@
     Core.UI.InitTableHead($('#FixedTable thead'), $('#FixedTable tbody'));
     Core.UI.StaticTableControl($('#OverviewControl').add($('#OverviewBody')));
     $('.MasterAction').bind('click', function (Event) {
-        window.location = $(this).find('.MasterActionLink').attr('href');
+        var $MasterActionLink = $(this).find('.MasterActionLink');
+        // only act if the link was not clicked directly
+        if (Event.target !== $MasterActionLink.get(0)) {
+            window.location = $MasterActionLink.attr('href');
+            return false;
+        }
     });
     $(window).resize(function() {
         Core.UI.AdjustTableHead($('#FixedTable thead'), $('#FixedTable tbody'), 0);

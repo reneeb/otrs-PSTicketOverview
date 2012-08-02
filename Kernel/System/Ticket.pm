@@ -513,6 +513,29 @@ sub TicketCreate {
         CreateUserID => $Param{UserID},
     );
 
+    if ( $Self->{ConfigObject}->Get('Ticket::Service') ) {
+
+        # history insert for service so that initial values can be seen
+        my $HistoryService   = $Param{Service}   || 'NULL';
+        my $HistoryServiceID = $Param{ServiceID} || '';
+        $Self->HistoryAdd(
+            TicketID     => $TicketID,
+            HistoryType  => 'ServiceUpdate',
+            Name         => "\%\%$HistoryService\%\%$HistoryServiceID\%\%NULL\%\%",
+            CreateUserID => $Param{UserID},
+        );
+
+        # history insert for SLA
+        my $HistorySLA   = $Param{SLA}   || 'NULL';
+        my $HistorySLAID = $Param{SLAID} || '';
+        $Self->HistoryAdd(
+            TicketID     => $TicketID,
+            HistoryType  => 'SLAUpdate',
+            Name         => "\%\%$HistorySLA\%\%$HistorySLAID\%\%NULL\%\%",
+            CreateUserID => $Param{UserID},
+        );
+    }
+
     # set customer data if given
     if ( $Param{CustomerNo} || $Param{CustomerID} || $Param{CustomerUser} ) {
         $Self->SetCustomerData(
@@ -704,7 +727,7 @@ sub TicketNumberLookup {
 
 rebuild a new ticket subject
 
-    This will generate a subject like "RE: [Ticket# 2004040510440485] Some subject"
+This will generate a subject like "RE: [Ticket# 2004040510440485] Some subject"
 
     my $NewSubject = $TicketObject->TicketSubjectBuild(
         TicketNumber => '2004040510440485',
@@ -712,8 +735,8 @@ rebuild a new ticket subject
         Action       => 'Reply',
     );
 
-    This will generate a subject like  "[Ticket# 2004040510440485] Some subject"
-    (so without RE: )
+This will generate a subject like  "[Ticket# 2004040510440485] Some subject"
+(so without RE: )
 
     my $NewSubject = $TicketObject->TicketSubjectBuild(
         TicketNumber => '2004040510440485',
@@ -722,7 +745,7 @@ rebuild a new ticket subject
         Action       => 'Reply',
     );
 
-    This will generate a subject like "FWD: [Ticket# 2004040510440485] Some subject"
+This will generate a subject like "FWD: [Ticket# 2004040510440485] Some subject"
 
     my $NewSubject = $TicketObject->TicketSubjectBuild(
         TicketNumber => '2004040510440485',
@@ -730,8 +753,8 @@ rebuild a new ticket subject
         Action       => 'Forward', # Possible values are Reply and Forward, Reply is default.
     );
 
-    This will generate a subject like "[Ticket# 2004040510440485] Re: Some subject"
-    (so without clean-up of subject)
+This will generate a subject like "[Ticket# 2004040510440485] Re: Some subject"
+(so without clean-up of subject)
 
     my $NewSubject = $TicketObject->TicketSubjectBuild(
         TicketNumber => '2004040510440485',
@@ -1282,10 +1305,15 @@ sub _TicketGetClosed {
     );
     return if !@List;
 
+    # Get id for StateUpdate;
+    my $HistoryTypeID = $Self->HistoryTypeLookup( Type => 'StateUpdate' );
+    return if !$HistoryTypeID;
+
     return if !$Self->{DBObject}->Prepare(
         SQL => "SELECT create_time FROM ticket_history WHERE ticket_id = ? AND "
-            . " state_id IN (${\(join ', ', sort @List)}) ORDER BY create_time DESC",
-        Bind  => [ \$Param{TicketID} ],
+            . " state_id IN (${\(join ', ', sort @List)}) AND history_type_id = ? "
+            . " ORDER BY create_time DESC",
+        Bind => [ \$Param{TicketID}, \$HistoryTypeID ],
         Limit => 1,
     );
 
@@ -1600,11 +1628,11 @@ to move a ticket (sends notification to agents of selected my queues, if ticket 
         UserID   => 123,
     );
 
-    Optional attribute:
-    SendNoNotification disables or enables agent and customer notification for this
-    action.
+Optional attribute:
+SendNoNotification disables or enables agent and customer notification for this
+action.
 
-    For example:
+For example:
 
         SendNoNotification => 0, # optional 1|0 (send no agent and customer notification)
 
@@ -3836,25 +3864,25 @@ To find tickets in your system.
         Subject => '%VIRUS 32%',
         Body    => '%VIRUS 32%',
 
-        # use full text index if configured (optional, default off)
+        # use full article text index if configured (optional, default off)
         FullTextIndex => 1,
 
-        # content search (AND or OR) (optional)
+        # article content search (AND or OR for From, To, Cc, Subject and Body) (optional)
         ContentSearch => 'AND',
 
-        # content search prefix (optional)
+        # article content search prefix (for From, To, Cc, Subject and Body) (optional)
         ContentSearchPrefix => '*',
 
-        # content search suffix (optional)
+        # article content search suffix (for From, To, Cc, Subject and Body) (optional)
         ContentSearchSuffix => '*',
 
         # content conditions for From,To,Cc,Subject,Body
         # Title,CustomerID and CustomerUserLogin (all optional)
         ConditionInline => 1,
 
-        # articles created after 60 minutes (article newer than 60 minutes)  (optional)
+        # articles created more than 60 minutes ago (article older than 60 minutes) (optional)
         ArticleCreateTimeOlderMinutes => 60,
-        # articles created before 120 minutes (article older than 120 minutes) (optional)
+        # articles created less than 120 minutes ago (article newer than 60 minutes) (optional)
         ArticleCreateTimeNewerMinutes => 120,
 
         # articles with create time after ... (article newer than this date) (optional)
@@ -3862,9 +3890,9 @@ To find tickets in your system.
         # articles with created time before ... (article older than this date) (optional)
         ArticleCreateTimeOlderDate => '2006-01-19 23:59:59',
 
-        # tickets created after 60 minutes (ticket newer than 60 minutes)  (optional)
+        # tickets created more than 60 minutes ago (ticket older than 60 minutes)  (optional)
         TicketCreateTimeOlderMinutes => 60,
-        # tickets created before 120 minutes (ticket older than 120 minutes) (optional)
+        # tickets created less than 120 minutes ago (ticket newer than 120 minutes) (optional)
         TicketCreateTimeNewerMinutes => 120,
 
         # tickets with create time after ... (ticket newer than this date) (optional)
@@ -3872,9 +3900,9 @@ To find tickets in your system.
         # tickets with created time before ... (ticket older than this date) (optional)
         TicketCreateTimeOlderDate => '2006-01-19 23:59:59',
 
-        # tickets changed after 60 minutes (ticket changed newer than 60 minutes)  (optional)
+        # tickets changed more than 60 minutes ago (optional)
         TicketChangeTimeOlderMinutes => 60,
-        # tickets changed before 120 minutes (ticket changed older 120 minutes) (optional)
+        # tickets changed less than 120 minutes ago (optional)
         TicketChangeTimeNewerMinutes => 120,
 
         # tickets with changed time after ... (ticket changed newer than this date) (optional)
@@ -3882,9 +3910,9 @@ To find tickets in your system.
         # tickets with changed time before ... (ticket changed older than this date) (optional)
         TicketChangeTimeOlderDate => '2006-01-19 23:59:59',
 
-        # tickets closed after 60 minutes (ticket closed newer than 60 minutes)  (optional)
+        # tickets closed more than 60 minutes ago (optional)
         TicketCloseTimeOlderMinutes => 60,
-        # tickets closed before 120 minutes (ticket closed older than 120 minutes) (optional)
+        # tickets closed less than 120 minutes ago (optional)
         TicketCloseTimeNewerMinutes => 120,
 
         # tickets with closed time after ... (ticket closed newer than this date) (optional)
@@ -3892,9 +3920,9 @@ To find tickets in your system.
         # tickets with closed time before ... (ticket closed older than this date) (optional)
         TicketCloseTimeOlderDate => '2006-01-19 23:59:59',
 
-        # tickets pending after 60 minutes (optional)
+        # tickets with pending time of more than 60 minutes ago (optional)
         TicketPendingTimeOlderMinutes => 60,
-        # tickets pending before 120 minutes (optional)
+        # tickets with pending time of less than 120 minutes ago (optional)
         TicketPendingTimeNewerMinutes => 120,
 
         # tickets with pending time after ... (optional)
@@ -3908,9 +3936,9 @@ To find tickets in your system.
         # TicketEscalationResponseTime...
         # TicketEscalationSolutionTime...
 
-        # ticket escalations over 60 minutes (optional)
+        # ticket escalation time of more than 60 minutes ago (optional)
         TicketEscalationTimeOlderMinutes => -60,
-        # ticket escalations in 120 minutes (optional)
+        # ticket escalation time of less than 120 minutes ago (optional)
         TicketEscalationTimeNewerMinutes => -120,
 
         # tickets with escalation time after ... (optional)
@@ -3946,11 +3974,11 @@ To find tickets in your system.
 
 Returns:
 
-    Result: 'ARRAY'
+Result: 'ARRAY'
 
     @TicketIDs = ( 1, 2, 3 );
 
-    Result: 'HASH'
+Result: 'HASH'
 
     %TicketIDs = (
         1 => '2010102700001',
@@ -3958,7 +3986,7 @@ Returns:
         3 => '2010102700003',
     );
 
-    Result: 'COUNT'
+Result: 'COUNT'
 
     $TicketIDs = 123;
 
@@ -4166,7 +4194,7 @@ sub TicketSearch {
     # create sql
     my $SQL;
     if ( $Result eq 'COUNT' ) {
-        $SQL = 'SELECT DISTINCT count(*)';
+        $SQL = 'SELECT COUNT(DISTINCT(st.id))';
     }
     else {
         $SQL = 'SELECT DISTINCT st.id, st.tn';
@@ -4232,12 +4260,16 @@ sub TicketSearch {
 
     # add ticket flag table
     if ( $Param{TicketFlag} ) {
+        my $Index = 1;
+        for my $Key ( sort keys %{ $Param{TicketFlag} } ) {
 # ---
 # DSV
 # ---
 #        $SQL    .= ', ticket_flag tf ';
 #        $SQLExt .= ' AND st.id = tf.ticket_id';
-        $SQL .= 'INNER JOIN ticket_flag tf ON st.id = tf.ticket_id ';
+            $SQL .= "INNER JOIN ticket_flag tf$Index ON st.id = tf$Index.ticket_id ";
+            $Index++;
+        }
 # ---
     }
 # ---
@@ -4249,7 +4281,7 @@ sub TicketSearch {
         $SQLExt .= 'AND art.id IN ( SELECT MIN(id) FROM article GROUP BY ticket_id ) ';
     }
 
-    $SQL .= 'WHERE 1 ';
+    $SQL .= 'WHERE 1 = 1 ';
 # ---
 
     # current type lookup
@@ -4360,8 +4392,8 @@ sub TicketSearch {
 
     # current ticket state type
     # NOTE: Open and Closed are not valid state types. It's for compat.
-    # Open   -> All states with are grouped as open (new, open, pending, ...)
-    # Closed -> All states with are grouped as closed (closed successful, closed unsuccessful)
+    # Open   -> All states which are grouped as open (new, open, pending, ...)
+    # Closed -> All states which are grouped as closed (closed successful, closed unsuccessful)
     if ( $Param{StateType} && $Param{StateType} eq 'Open' ) {
         my @ViewableStateIDs = $Self->{StateObject}->StateGetStatesByType(
             Type   => 'Viewable',
@@ -4383,6 +4415,7 @@ sub TicketSearch {
             StateType => $Param{StateType},
             Result    => 'ID',
         );
+        return if !$StateIDs[0];
         $SQLExt .= " AND st.ticket_state_id IN ( ${\(join ', ', sort {$a <=> $b} @StateIDs)} ) ";
     }
 
@@ -4395,7 +4428,8 @@ sub TicketSearch {
             StateType => \@StateTypes,
             Result    => 'ID',
         );
-        $SQLExt .= " AND st.ticket_state_id IN ( ${\(join ', ', sort {$a <=> $b} @StateIDs)} ) " if @StateIDs;
+        return if !$StateIDs[0];
+        $SQLExt .= " AND st.ticket_state_id IN ( ${\(join ', ', sort {$a <=> $b} @StateIDs)} ) ";
     }
 
     # current lock lookup
@@ -4695,21 +4729,21 @@ sub TicketSearch {
 
     # add ticket flag extension
     if ( $Param{TicketFlag} ) {
-        my @Values;
+
+        my $TicketFlagUserID = $Param{TicketFlagUserID} || $Param{UserID};
+        return if !defined $TicketFlagUserID;
+
+        my $Index = 1;
         for my $Key ( sort keys %{ $Param{TicketFlag} } ) {
             my $Value = $Param{TicketFlag}->{$Key};
-            $Value = $Self->{DBObject}->Quote($Value);
             return if !defined $Value;
-            push @Values, $Value;
+
+            $SQLExt .= " AND tf$Index.ticket_key = '" . $Self->{DBObject}->Quote($Key) . "'";
+            $SQLExt .= " AND tf$Index.ticket_value = '" . $Self->{DBObject}->Quote($Value) . "'";
+            $SQLExt .= " AND tf$Index.create_by = " . $Self->{DBObject}->Quote($TicketFlagUserID);
+
+            $Index++;
         }
-
-        # create the id string
-        my $TypeString = "'" . join "', '", @Values . "'";
-
-        # create the sql part
-        my $TicketFlagUserID = $Param{TicketFlagUserID} || $Param{UserID};
-        return if !defined $Self->{DBObject}->Quote($TicketFlagUserID);
-        $SQLExt .= " AND tf.create_by = $TicketFlagUserID AND tf.ticket_value IN ($TypeString)";
     }
 
     # other ticket stuff
@@ -4821,6 +4855,7 @@ sub TicketSearch {
                     $SQLExtSub .= ' OR ' if ($Counter);
                     $SQLExtSub .= " LOWER(st.freekey$Number) LIKE LOWER('"
                         . $Self->{DBObject}->Quote( $Key, 'Like' ) . "')";
+                    $SQLExtSub .= ' ' . $Self->{DBObject}->GetDatabaseFunction('LikeEscapeString');
                     $Counter++;
                 }
             }
@@ -4839,6 +4874,7 @@ sub TicketSearch {
 
             $SQLExt .= " AND LOWER(st.freetext$Number) LIKE LOWER('"
                 . $Self->{DBObject}->Quote( $Param{"TicketFreeText$Number"}, 'Like' ) . "')";
+            $SQLExt .= ' ' . $Self->{DBObject}->GetDatabaseFunction('LikeEscapeString');
         }
         elsif ( $Param{"TicketFreeText$Number"} && ref $Param{"TicketFreeText$Number"} eq 'ARRAY' )
         {
@@ -4854,6 +4890,7 @@ sub TicketSearch {
                     $SQLExtSub .= ' OR ' if ($Counter);
                     $SQLExtSub .= " LOWER(st.freetext$Number) LIKE LOWER('"
                         . $Self->{DBObject}->Quote( $Text, 'Like' ) . "')";
+                    $SQLExtSub .= ' ' . $Self->{DBObject}->GetDatabaseFunction('LikeEscapeString');
                     $Counter++;
                 }
             }
@@ -4908,7 +4945,7 @@ sub TicketSearch {
 
     # get articles created older/newer than x minutes or older/newer than a date
     my %ArticleTime = (
-        ArticleCreateTime => 'art.create_time',
+        ArticleCreateTime => 'art.incoming_time',
     );
     for my $Key ( keys %ArticleTime ) {
 
@@ -4917,10 +4954,8 @@ sub TicketSearch {
 
             $Param{ $Key . 'OlderMinutes' } ||= 0;
 
-            my $Time = $Self->{TimeObject}->SystemTime2TimeStamp(
-                SystemTime => $Self->{TimeObject}->SystemTime()
-                    - ( $Param{ $Key . 'OlderMinutes' } * 60 ),
-            );
+            my $Time = $Self->{TimeObject}->SystemTime()
+                - ( $Param{ $Key . 'OlderMinutes' } * 60 );
 
             $SQLExt .= " AND $ArticleTime{$Key} <= '$Time'";
         }
@@ -4930,10 +4965,8 @@ sub TicketSearch {
 
             $Param{ $Key . 'NewerMinutes' } ||= 0;
 
-            my $Time = $Self->{TimeObject}->SystemTime2TimeStamp(
-                SystemTime => $Self->{TimeObject}->SystemTime()
-                    - ( $Param{ $Key . 'NewerMinutes' } * 60 ),
-            );
+            my $Time = $Self->{TimeObject}->SystemTime()
+                - ( $Param{ $Key . 'NewerMinutes' } * 60 );
 
             $SQLExt .= " AND $ArticleTime{$Key} >= '$Time'";
         }
@@ -4942,7 +4975,7 @@ sub TicketSearch {
         if ( $Param{ $Key . 'OlderDate' } ) {
             if (
                 $Param{ $Key . 'OlderDate' }
-                !~ /\d\d\d\d-(\d\d|\d)-(\d\d|\d) (\d\d|\d):(\d\d|\d):(\d\d|\d)/
+                !~ /(\d\d\d\d)-(\d\d|\d)-(\d\d|\d) (\d\d|\d):(\d\d|\d):(\d\d|\d)/
                 )
             {
                 $Self->{LogObject}->Log(
@@ -4952,14 +4985,25 @@ sub TicketSearch {
                 return;
             }
 
-            $SQLExt .= " AND $ArticleTime{$Key} <= '" . $Param{ $Key . 'OlderDate' } . "'";
+            # convert param date to system time
+            my $SystemTime = $Self->{TimeObject}->Date2SystemTime(
+                Year   => $1,
+                Month  => $2,
+                Day    => $3,
+                Hour   => $4,
+                Minute => $5,
+                Second => $6,
+            );
+
+            $SQLExt .= " AND $ArticleTime{$Key} <= '" . $SystemTime . "'";
+
         }
 
         # get articles created newer than xxxx-xx-xx xx:xx date
         if ( $Param{ $Key . 'NewerDate' } ) {
             if (
                 $Param{ $Key . 'NewerDate' }
-                !~ /\d\d\d\d-(\d\d|\d)-(\d\d|\d) (\d\d|\d):(\d\d|\d):(\d\d|\d)/
+                !~ /(\d\d\d\d)-(\d\d|\d)-(\d\d|\d) (\d\d|\d):(\d\d|\d):(\d\d|\d)/
                 )
             {
                 $Self->{LogObject}->Log(
@@ -4969,8 +5013,19 @@ sub TicketSearch {
                 return;
             }
 
-            $SQLExt .= " AND $ArticleTime{$Key} >= '" . $Param{ $Key . 'NewerDate' } . "'";
+            # convert param date to system time
+            my $SystemTime = $Self->{TimeObject}->Date2SystemTime(
+                Year   => $1,
+                Month  => $2,
+                Day    => $3,
+                Hour   => $4,
+                Minute => $5,
+                Second => $6,
+            );
+
+            $SQLExt .= " AND $ArticleTime{$Key} >= '" . $SystemTime . "'";
         }
+
     }
 
     # get tickets created/escalated older/newer than x minutes
@@ -5619,11 +5674,11 @@ to lock or unlock a ticket
         UserID   => 123,
     );
 
-    Optional attribute:
-    SendNoNotification, disable or enable agent and customer notification for this
-    action. Otherwise a notification will be send to agent and cusomer.
+Optional attribute:
+SendNoNotification, disable or enable agent and customer notification for this
+action. Otherwise a notification will be send to agent and cusomer.
 
-    For example:
+For example:
 
         SendNoNotification => 0, # optional 1|0 (send no agent and customer notification)
 
@@ -5839,11 +5894,11 @@ to set a ticket state
         UserID   => 123,
     );
 
-    Optional attribute:
-    SendNoNotification, disable or enable agent and customer notification for this
-    action. Otherwise a notification will be send to agent and cusomer.
+Optional attribute:
+SendNoNotification, disable or enable agent and customer notification for this
+action. Otherwise a notification will be send to agent and cusomer.
 
-    For example:
+For example:
 
         SendNoNotification => 0, # optional 1|0 (send no agent and customer notification)
 
@@ -6105,7 +6160,7 @@ sub OwnerCheck {
 
 to set the ticket owner (notification to the new owner will be sent)
 
-    by using user id
+by using user id
 
     my $Success = $TicketObject->TicketOwnerSet(
         TicketID  => 123,
@@ -6113,7 +6168,7 @@ to set the ticket owner (notification to the new owner will be sent)
         UserID    => 123,
     );
 
-    by using user login
+by using user login
 
     my $Success = $TicketObject->TicketOwnerSet(
         TicketID => 123,
@@ -6121,15 +6176,15 @@ to set the ticket owner (notification to the new owner will be sent)
         UserID   => 123,
     );
 
-    Return:
+Return:
     1 = owner has been set
     2 = this owner is already set, no update needed
 
-    Optional attribute:
-    SendNoNotification, disable or enable agent and customer notification for this
-    action. Otherwise a notification will be send to agent and cusomer.
+Optional attribute:
+SendNoNotification, disable or enable agent and customer notification for this
+action. Otherwise a notification will be send to agent and cusomer.
 
-    For example:
+For example:
 
         SendNoNotification => 0, # optional 1|0 (send no agent and customer notification)
 
@@ -6292,15 +6347,15 @@ to set the ticket responsible (notification to the new responsible will be sent)
         UserID    => 213,
     );
 
-    Return:
+Return:
     1 = responsible has been set
     2 = this responsible is already set, no update needed
 
-    Optional attribute:
-    SendNoNotification, disable or enable agent and customer notification for this
-    action. Otherwise a notification will be send to agent and cusomer.
+Optional attribute:
+SendNoNotification, disable or enable agent and customer notification for this
+action. Otherwise a notification will be send to agent and cusomer.
 
-    For example:
+For example:
 
         SendNoNotification => 0, # optional 1|0 (send no agent and customer notification)
 
@@ -7443,6 +7498,12 @@ sub TicketMerge {
         Bind => [ \$Param{MainTicketID}, \$Param{MergeTicketID} ],
     );
 
+    # update the accounted time of the main ticket
+    return if !$Self->{DBObject}->Do(
+        SQL => 'UPDATE time_accounting SET ticket_id = ? WHERE ticket_id = ?',
+        Bind => [ \$Param{MainTicketID}, \$Param{MergeTicketID} ],
+    );
+
     my %MainTicket  = $Self->TicketGet( TicketID => $Param{MainTicketID} );
     my %MergeTicket = $Self->TicketGet( TicketID => $Param{MergeTicketID} );
 
@@ -7970,7 +8031,7 @@ prepare ACL execution of current state
         UserID        => 123,
     );
 
-    or
+or
 
     $TicketObject->TicketAcl(
         Data => {
@@ -8102,7 +8163,7 @@ sub TicketAcl {
        # is found in the list, so we can be more sure that it is the type that we want here.
 
         # lookup the type list (workaround for described problem)
-        my %TypeList = $Self->{TypeObject}->TypeList();
+        my %TypeList = reverse $Self->{TypeObject}->TypeList();
 
         # check if type is in the type list (workaround for described problem)
         if ( $TypeList{ $Param{Type} } ) {
@@ -8477,6 +8538,7 @@ sub TicketArticleStorageSwitch {
         TicketID => $Param{TicketID},
         UserID   => $Param{UserID},
     );
+    ARTICLEID:
     for my $ArticleID (@ArticleIndex) {
 
         # create source object
@@ -8522,11 +8584,11 @@ sub TicketArticleStorageSwitch {
             my $MD5Sum = $Self->{MainObject}->MD5sum(
                 String => $Attachment{Content},
             );
-            $MD5Sums{$MD5Sum} = 1;
+            $MD5Sums{$MD5Sum}++;
         }
 
         # nothing to transfer
-        return 1 if !@Attachments && !$Plain;
+        next ARTICLEID if !@Attachments && !$Plain;
 
         # write target attachments
         $Self->{ConfigObject}->Set(
@@ -8547,9 +8609,10 @@ sub TicketArticleStorageSwitch {
         if (%Index) {
             $Self->{LogObject}->Log(
                 Priority => 'error',
-                Message  => "Attachments already in $Param{Destination}!"
+                Message =>
+                    "Attachments of TicketID:$Param{TicketID}/ArticleID:$ArticleID already in $Param{Destination}!"
             );
-            return 1;
+            next ARTICLEID;
         }
 
         # write attachments to destination
@@ -8589,7 +8652,10 @@ sub TicketArticleStorageSwitch {
                 String => \$Attachment{Content},
             );
             if ( $MD5Sums{$MD5Sum} ) {
-                delete $MD5Sums{$MD5Sum};
+                $MD5Sums{$MD5Sum}--;
+                if ( !$MD5Sums{$MD5Sum} ) {
+                    delete $MD5Sums{$MD5Sum};
+                }
             }
             else {
                 $Self->{LogObject}->Log(

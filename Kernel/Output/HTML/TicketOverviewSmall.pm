@@ -298,11 +298,11 @@ sub Run {
             if ( $Param{SortBy} && ( $Param{SortBy} eq $Item ) ) {
                 if ( $Param{OrderBy} && ( $Param{OrderBy} eq 'Up' ) ) {
                     $OrderBy = 'Down';
-                    $CSS .= ' SortDescending';
+                    $CSS .= ' SortAscending';
                 }
                 else {
                     $OrderBy = 'Up';
-                    $CSS .= ' SortAscending';
+                    $CSS .= ' SortDescending';
                 }
             }
 
