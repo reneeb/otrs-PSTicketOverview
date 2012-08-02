@@ -2493,7 +2493,7 @@ sub TicketEscalationIndexBuild {
             $AddEscalationTimes{$EscalationTimeType} = 0;
         }
     }
-    
+
     if ($AddPreviousEscalationTimesHistory) {
         $Self->HistoryAdd(
             TicketID     => $Param{TicketID},
